@@ -1,0 +1,40 @@
+networks:
+  ollama-network:
+    driver: bridge 
+services:
+  ollama-webui:
+    image: ghcr.io/oslook/ollama-webui:latest
+    # build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - ollama-network
+    depends_on:
+      - ollama-deepseek
+  ollama-deepseek: 
+    image: ollama/ollama
+    restart: unless-stopped
+    ports:
+      - '11434'
+    volumes:
+      - './ollama:/root/.ollama'
+    environment:
+      OLLAMA_HOST: 0.0.0.0
+      OLLAMA_PORT: 11434
+      OLLAMA_MODELS:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - ollama-network
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+volumes:
+  ollama-data:
