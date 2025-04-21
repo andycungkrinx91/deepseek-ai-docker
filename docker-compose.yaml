@@ -1,0 +1,67 @@
+networks:
+  deepseek-network:
+    external: true
+    name: deepseek-network
+services:
+  # ollama-webui:
+  #   #image: ghcr.io/oslook/ollama-webui:main
+  #   build: 
+  #     context: ./ollama-webui
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #   restart: unless-stopped
+  #   networks:
+  #     - deepseek-network
+  #   depends_on:
+  #     - ollama-deepseek
+  
+  #Use this if you wan using open-webui
+  open-webui:
+    restart: unless-stopped
+    # use tag `main` for use CPU only. use tag `ollama` for use GPU
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    volumes:
+      - ./open-webui:/app/backend/data
+    depends_on:
+      - ollama-deepseek
+    ports:
+      - 80:8080
+    networks:
+      - deepseek-network
+    environment:
+      - "OLLAMA_BASE_URL=http://host.docker.internal:11434"
+      - "WEBUI_SECRET_KEY="
+      - "HF_HUB_OFFLINE=1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+  ollama-deepseek: 
+    image: ollama/ollama
+    container_name: ollama-deepseek
+    restart: unless-stopped
+    ports:
+      - "11434"
+    volumes:
+      - "./ollama:/root/.ollama"
+    environment:
+      OLLAMA_HOST: 0.0.0.0
+      OLLAMA_PORT: 11434
+      OLLAMA_MODELS:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - deepseek-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+volumes:
+  #ollama-webui: {}
+  open-webui: {}
+  ollama-deepseek: {}
